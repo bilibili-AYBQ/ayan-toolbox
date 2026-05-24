@@ -1,0 +1,40 @@
+{
+  "totalVisits": 5,
+  "onlineUsers": {},
+  "users": [
+    {
+      "username": "阿颜棒球",
+      "password": "123456",
+      "avatarColor": "#e67e22",
+      "avatarIcon": "颜",
+      "createdAt": 1779615796260
+    }
+  ],
+  "messages": [
+    {
+      "id": 1779615802543,
+      "username": "阿颜棒球",
+      "text": "1123456",
+      "time": "2026-05-24T09:43:22.543Z",
+      "avatarColor": "#e67e22",
+      "avatarIcon": "颜"
+    },
+    {
+      "id": 1779615809014,
+      "username": "阿颜棒球",
+      "text": "犹如在吗",
+      "time": "2026-05-24T09:43:29.014Z",
+      "avatarColor": "#e67e22",
+      "avatarIcon": "颜"
+    },
+    {
+      "id": 1779615813348,
+      "username": "阿颜棒球",
+      "text": "我是神人哦",
+      "time": "2026-05-24T09:43:33.348Z",
+      "avatarColor": "#e67e22",
+      "avatarIcon": "颜"
+    }
+  ],
+  "forumMessages": []
+}
