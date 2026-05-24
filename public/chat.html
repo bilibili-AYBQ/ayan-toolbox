@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿颜聊天室 · 自定义头像</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui;
+            background: url('/images/Main_014.png') no-repeat center center fixed;
+            background-size: cover;
+            transition: background-image 0.5s ease;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .glass {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .messages {
+            background: rgba(0,0,0,0.2);
+            border-radius: 1.5rem;
+            height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 1rem;
+            background: rgba(255,255,255,0.7);
+            border-radius: 1rem;
+            padding: 0.75rem;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .msg-content {
+            flex: 1;
+        }
+        .username { font-weight: bold; color: #e67e22; margin-right: 0.5rem; }
+        .time { font-size: 0.7rem; color: #666; }
+        .text { margin-top: 4px; word-break: break-word; }
+        .input-area {
+            display: flex;
+            gap: 0.5rem;
+        }
+        input, button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 2rem;
+            font-size: 1rem;
+        }
+        input { flex: 1; background: white; }
+        button { background: #e67e22; color: white; cursor: pointer; }
+        .bg-switch { margin-top: 1rem; text-align: center; }
+        .bg-switch button { background: #6c757d; }
+        .auth { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.8rem; }
+        .auth-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        .auth input { flex: 1; }
+        .avatar-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .avatar-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        select, input[type="color"] {
+            padding: 0.3rem;
+            border-radius: 2rem;
+            border: none;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+<div class="glass">
+    <div class="chat-header">
+        <h2><i class="fas fa-comments"></i> 阿颜聊天室 · 自定义头像</h2>
+        <button id="logoutBtn" style="background:#dc3545;">退出登录</button>
+    </div>
+
+    <!-- 未登录时显示注册/登录面板 -->
+    <div id="authPanel">
+        <div class="auth">
+            <div class="auth-row">
+                <input type="text" id="regUsername" placeholder="用户名">
+                <input type="password" id="regPassword" placeholder="密码">
+                <button id="registerBtn">注册</button>
+            </div>
+            <div class="avatar-selector">
+                <span>自定义头像：</span>
+                <input type="color" id="avatarColor" value="#e67e22">
+                <input type="text" id="avatarIcon" placeholder="显示文字(1~2字)" maxlength="2" value="颜">
+                <div class="avatar-preview" id="avatarPreview" style="background:#e67e22;">颜</div>
+            </div>
+            <hr>
+            <div class="auth-row">
+                <input type="text" id="loginUsername" placeholder="用户名">
+                <input type="password" id="loginPassword" placeholder="密码">
+                <button id="loginBtn">登录</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录后显示聊天界面 -->
+    <div id="chatPanel" style="display:none;">
+        <div class="messages" id="messages"></div>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="输入消息...">
+            <button id="sendBtn">发送</button>
+        </div>
+    </div>
+
+    <div class="bg-switch">
+        <button id="nextBgBtn"><i class="fas fa-images"></i> 切换背景</button>
+    </div>
+</div>
+
+<script>
+    // 背景切换
+    const bgImages = [
+        "/images/Main_014.png","/images/Main_013.png","/images/Main_010.png",
+        "/images/Main_005.png","/images/Main_002.png","/images/Main_004.png","/images/Main_024.png"
+    ];
+    let bgIdx = 0;
+    document.getElementById('nextBgBtn').onclick = () => {
+        bgIdx = (bgIdx+1)%bgImages.length;
+        document.body.style.backgroundImage = `url('${bgImages[bgIdx]}')`;
+    };
+    if(bgImages.length) document.body.style.backgroundImage = `url('${bgImages[0]}')`;
+
+    // 预览头像
+    const colorPicker = document.getElementById('avatarColor');
+    const iconInput = document.getElementById('avatarIcon');
+    const preview = document.getElementById('avatarPreview');
+    function updatePreview() {
+        preview.style.backgroundColor = colorPicker.value;
+        preview.textContent = iconInput.value || '颜';
+    }
+    colorPicker.addEventListener('input', updatePreview);
+    iconInput.addEventListener('input', updatePreview);
+    updatePreview();
+
+    let pollInterval = null;
+
+    // 检查当前聊天登录状态
+    async function checkUser() {
+        const res = await fetch('/api/chat/user');
+        const data = await res.json();
+        if(data.username) {
+            document.getElementById('authPanel').style.display = 'none';
+            document.getElementById('chatPanel').style.display = 'block';
+            loadMessages();
+            startPolling();
+        } else {
+            document.getElementById('authPanel').style.display = 'block';
+            document.getElementById('chatPanel').style.display = 'none';
+            if(pollInterval) clearInterval(pollInterval);
+        }
+    }
+
+    // 加载消息（渲染头像）
+    async function loadMessages() {
+        const res = await fetch('/api/chat/messages?limit=50');
+        const msgs = await res.json();
+        const container = document.getElementById('messages');
+        container.innerHTML = msgs.map(m => `
+            <div class="message">
+                <div class="avatar" style="background: ${m.avatarColor || '#e67e22'};">${escapeHtml(m.avatarIcon || m.username.charAt(0).toUpperCase())}</div>
+                <div class="msg-content">
+                    <span class="username">${escapeHtml(m.username)}</span>
+                    <span class="time">${new Date(m.time).toLocaleTimeString()}</span>
+                    <div class="text">${escapeHtml(m.text)}</div>
+                </div>
+            </div>
+        `).join('');
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function startPolling() {
+        if(pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(loadMessages, 2000);
+    }
+
+    // 发送消息
+    document.getElementById('sendBtn')?.addEventListener('click', async () => {
+        const text = document.getElementById('messageInput').value;
+        if(!text.trim()) return;
+        await fetch('/api/chat/send', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({text})
+        });
+        document.getElementById('messageInput').value = '';
+        loadMessages();
+    });
+
+    // 注册
+    document.getElementById('registerBtn').onclick = async () => {
+        const username = document.getElementById('regUsername').value.trim();
+        const password = document.getElementById('regPassword').value;
+        const avatarColor = document.getElementById('avatarColor').value;
+        const avatarIcon = document.getElementById('avatarIcon').value.trim() || username.charAt(0).toUpperCase();
+        if(!username || !password) { alert('用户名和密码不能为空'); return; }
+        const res = await fetch('/api/register', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ username, password, avatarColor, avatarIcon })
+        });
+        const data = await res.json();
+        if(data.success) {
+            alert('注册成功，已自动登录');
+            checkUser();
+        } else {
+            alert(data.message);
+        }
+    };
+
+    // 登录
+    document.getElementById('loginBtn').onclick = async () => {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const res = await fetch('/api/chat/login', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if(data.success) {
+            checkUser();
+        } else {
+            alert(data.message);
+        }
+    };
+
+    // 退出
+    document.getElementById('logoutBtn').onclick = async () => {
+        await fetch('/api/chat/logout', {method:'POST'});
+        checkUser();
+    };
+
+    // 按回车发送
+    document.getElementById('messageInput')?.addEventListener('keypress', (e) => {
+        if(e.key === 'Enter') document.getElementById('sendBtn').click();
+    });
+
+    checkUser();
+</script>
+</body>
+</html>

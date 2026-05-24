@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿颜论坛 · 简单留言板</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui;
+            background: url('/images/Main_014.png') no-repeat center center fixed;
+            background-size: cover;
+            transition: background-image 0.5s ease;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .glass {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .nickname-area {
+            background: rgba(0,0,0,0.3);
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .nickname-area input {
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            border: none;
+            background: white;
+        }
+        .messages {
+            background: rgba(0,0,0,0.2);
+            border-radius: 1.5rem;
+            height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .msg-item {
+            background: rgba(255,255,255,0.7);
+            margin-bottom: 0.8rem;
+            padding: 0.6rem 1rem;
+            border-radius: 1.2rem;
+        }
+        .msg-nick {
+            font-weight: bold;
+            color: #e67e22;
+            margin-right: 0.5rem;
+        }
+        .msg-time {
+            font-size: 0.7rem;
+            color: #666;
+        }
+        .msg-text {
+            margin-top: 4px;
+            word-break: break-word;
+        }
+        .input-area {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .input-area input {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            border: none;
+        }
+        button {
+            background: #e67e22;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            color: white;
+            cursor: pointer;
+        }
+        .bg-switch {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .bg-switch button {
+            background: #6c757d;
+        }
+        footer {
+            text-align: center;
+            margin-top: 1rem;
+            color: white;
+            font-size: 0.7rem;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+<div class="glass">
+    <div class="header">
+        <h2><i class="fas fa-comment-dots"></i> 阿颜论坛 · 留言板</h2>
+        <a href="/" style="color:white; background:rgba(0,0,0,0.5); padding:0.3rem 0.8rem; border-radius:2rem; text-decoration:none;"><i class="fas fa-home"></i> 返回</a>
+    </div>
+
+    <div class="nickname-area">
+        <span>👤 昵称：</span>
+        <input type="text" id="nicknameInput" placeholder="输入你的昵称" maxlength="20">
+        <button id="setNicknameBtn">设置</button>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area">
+        <input type="text" id="messageInput" placeholder="写下你的留言..." maxlength="200">
+        <button id="sendBtn">发布</button>
+    </div>
+
+    <div class="bg-switch">
+        <button id="nextBgBtn"><i class="fas fa-images"></i> 切换背景</button>
+    </div>
+    <footer>仅需昵称即可发言，无需注册。文明交流，尊重彼此。</footer>
+</div>
+
+<script>
+    // 背景图片列表（与主站一致）
+    const bgImages = [
+        "/images/Main_014.png", "/images/Main_013.png", "/images/Main_010.png",
+        "/images/Main_005.png", "/images/Main_002.png", "/images/Main_004.png", "/images/Main_024.png"
+    ];
+    let bgIdx = 0;
+    document.getElementById('nextBgBtn').onclick = () => {
+        bgIdx = (bgIdx+1) % bgImages.length;
+        document.body.style.backgroundImage = `url('${bgImages[bgIdx]}')`;
+    };
+    document.body.style.backgroundImage = `url('${bgImages[0]}')`;
+
+    // 昵称管理 (localStorage)
+    let currentNickname = localStorage.getItem('forum_nick') || '';
+    const nicknameInput = document.getElementById('nicknameInput');
+    const setNicknameBtn = document.getElementById('setNicknameBtn');
+    if (currentNickname) nicknameInput.value = currentNickname;
+
+    setNicknameBtn.onclick = () => {
+        let newNick = nicknameInput.value.trim();
+        if (newNick === '') {
+            alert('昵称不能为空');
+            return;
+        }
+        if (newNick.length > 20) newNick = newNick.substring(0,20);
+        currentNickname = newNick;
+        localStorage.setItem('forum_nick', currentNickname);
+        alert('昵称已设置为：' + currentNickname);
+    };
+
+    // 加载留言
+    async function loadMessages() {
+        try {
+            const res = await fetch('/api/forum/messages');
+            const msgs = await res.json();
+            const container = document.getElementById('messages');
+            container.innerHTML = msgs.map(msg => `
+                <div class="msg-item">
+                    <span class="msg-nick">${escapeHtml(msg.nickname)}</span>
+                    <span class="msg-time">${new Date(msg.time).toLocaleString()}</span>
+                    <div class="msg-text">${escapeHtml(msg.text)}</div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        } catch(e) { console.error(e); }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // 发送留言
+    async function sendMessage() {
+        if (!currentNickname) {
+            alert('请先设置昵称');
+            return;
+        }
+        const text = document.getElementById('messageInput').value.trim();
+        if (!text) {
+            alert('请输入内容');
+            return;
+        }
+        const res = await fetch('/api/forum/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname: currentNickname, text })
+        });
+        if (res.ok) {
+            document.getElementById('messageInput').value = '';
+            loadMessages();
+        } else {
+            alert('发布失败，请稍后重试');
+        }
+    }
+
+    document.getElementById('sendBtn').onclick = sendMessage;
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // 初始加载
+    loadMessages();
+    // 每5秒自动刷新
+    setInterval(loadMessages, 5000);
+</script>
+</body>
+</html>
