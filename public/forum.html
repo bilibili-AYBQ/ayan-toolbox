@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿颜论坛 · 留言板</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui;
+            background: url('/images/Main_014.png') no-repeat center center fixed;
+            background-size: cover;
+            transition: background-image 0.5s ease;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .glass {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .nickname-area {
+            background: rgba(0,0,0,0.3);
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nickname-area input {
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            border: none;
+            background: white;
+        }
+        .messages {
+            background: rgba(0,0,0,0.2);
+            border-radius: 1.5rem;
+            height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .msg-item {
+            background: rgba(255,255,255,0.7);
+            margin-bottom: 0.8rem;
+            padding: 0.6rem 1rem;
+            border-radius: 1.2rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #e67e22;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1rem;
+            color: white;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .msg-avatar:hover {
+            transform: scale(1.05);
+        }
+        .msg-content {
+            flex: 1;
+        }
+        .msg-nick {
+            font-weight: bold;
+            color: #e67e22;
+            margin-right: 0.5rem;
+        }
+        .msg-time {
+            font-size: 0.7rem;
+            color: #666;
+        }
+        .msg-text {
+            margin-top: 4px;
+            word-break: break-word;
+        }
+        .input-area {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .input-area input {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            border: none;
+        }
+        button {
+            background: #e67e22;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            color: white;
+            cursor: pointer;
+        }
+        .bg-switch {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .bg-switch button {
+            background: #6c757d;
+        }
+        .admin-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .admin-actions button {
+            background: #dc3545;
+            font-size: 0.75rem;
+            padding: 0.3rem 0.8rem;
+        }
+        .admin-actions .clear-btn {
+            background: #6c757d;
+        }
+        .ban-popup {
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 1rem;
+            border-radius: 1rem;
+            margin: 0.5rem 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 1rem;
+            color: white;
+            font-size: 0.7rem;
+        }
+        .kick-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            color: white;
+            flex-direction: column;
+            text-align: center;
+            padding: 2rem;
+        }
+        .kick-overlay h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ff6b6b;
+        }
+        .kick-overlay p {
+            font-size: 1.2rem;
+            max-width: 500px;
+        }
+        .kick-overlay .reason {
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            margin-top: 1rem;
+            border-left: 4px solid #ff6b6b;
+        }
+        @media (max-width: 700px) {
+            .glass { padding: 1rem; }
+            .header { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+<div class="glass" id="app">
+    <div class="header">
+        <h2><i class="fas fa-comment-dots"></i> 阿颜论坛 · 留言板</h2>
+        <a href="/" style="color:white; background:rgba(0,0,0,0.5); padding:0.3rem 0.8rem; border-radius:2rem; text-decoration:none;"><i class="fas fa-home"></i> 返回</a>
+    </div>
+
+    <div class="nickname-area" id="nicknameArea">
+        <span>👤 昵称：</span>
+        <input type="text" id="nicknameInput" placeholder="输入你的昵称" maxlength="20">
+        <button id="setNicknameBtn">设置</button>
+    </div>
+
+    <div class="admin-actions" id="adminActions" style="display:none;">
+        <button class="clear-btn" id="clearForumBtn">🗑️ 清空所有留言</button>
+        <!-- 后续可加其他管理按钮 -->
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area">
+        <input type="text" id="messageInput" placeholder="写下你的留言..." maxlength="200">
+        <button id="sendBtn">发布</button>
+    </div>
+
+    <div class="bg-switch">
+        <button id="nextBgBtn"><i class="fas fa-images"></i> 切换背景</button>
+    </div>
+    <footer>仅需昵称即可发言，文明交流，尊重彼此。管理员有权管理违规用户。</footer>
+</div>
+
+<!-- 被踢出遮罩层（初始隐藏） -->
+<div id="kickOverlay" class="kick-overlay" style="display:none;">
+    <h1>🚫 你已被管理员踢出</h1>
+    <p>原因：</p>
+    <div class="reason" id="kickReason">未提供具体原因</div>
+    <button onclick="window.location.href='/'" style="margin-top:2rem; background:#ff6b6b; padding:0.8rem 2rem; border-radius:2rem; border:none; color:white; font-weight:bold; cursor:pointer;">返回工具箱首页</button>
+</div>
+
+<script>
+    // 背景图片列表
+    const bgImages = [
+        "/images/Main_014.png", "/images/Main_013.png", "/images/Main_010.png",
+        "/images/Main_005.png", "/images/Main_002.png", "/images/Main_004.png", "/images/Main_024.png"
+    ];
+    let bgIdx = 0;
+    document.getElementById('nextBgBtn').onclick = () => {
+        bgIdx = (bgIdx+1) % bgImages.length;
+        document.body.style.backgroundImage = `url('${bgImages[bgIdx]}')`;
+    };
+    document.body.style.backgroundImage = `url('${bgImages[0]}')`;
+
+    // 昵称管理 (localStorage)
+    let currentNickname = localStorage.getItem('forum_nick') || '';
+    const nicknameInput = document.getElementById('nicknameInput');
+    const setNicknameBtn = document.getElementById('setNicknameBtn');
+    if (currentNickname) nicknameInput.value = currentNickname;
+
+    // 存储当前被禁言列表（来自后端）
+    let bannedList = [];
+
+    // 判断当前用户是否被踢出
+    async function checkKicked() {
+        try {
+            const res = await fetch('/api/forum/messages');
+            const data = await res.json();
+            const banned = data.bannedUsers || [];
+            const kickRecord = banned.find(b => b.nickname === currentNickname && b.action === 'kick');
+            if (kickRecord) {
+                document.getElementById('kickReason').innerText = kickRecord.reason || '管理员未提供具体原因';
+                document.getElementById('kickOverlay').style.display = 'flex';
+                // 清空本地昵称，防止重复显示
+                localStorage.removeItem('forum_nick');
+                return true;
+            }
+        } catch(e) { console.warn('检查踢出状态失败', e); }
+        return false;
+    }
+
+    // 加载留言（并检查管理员状态）
+    async function loadMessages() {
+        try {
+            const res = await fetch('/api/forum/messages');
+            const data = await res.json();
+            const msgs = data.messages || [];
+            bannedList = data.bannedUsers || [];
+            const container = document.getElementById('messages');
+            container.innerHTML = msgs.map(msg => {
+                // 头像颜色根据昵称生成
+                const color = stringToColor(msg.nickname);
+                return `
+                    <div class="msg-item">
+                        <div class="msg-avatar" style="background:${color};" data-nickname="${escapeHtml(msg.nickname)}" onclick="handleAvatarClick('${escapeHtml(msg.nickname)}')">${escapeHtml(msg.nickname.charAt(0).toUpperCase())}</div>
+                        <div class="msg-content">
+                            <span class="msg-nick">${escapeHtml(msg.nickname)}</span>
+                            <span class="msg-time">${new Date(msg.time).toLocaleString()}</span>
+                            <div class="msg-text">${escapeHtml(msg.text)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            container.scrollTop = container.scrollHeight;
+
+            // 检查当前用户是否被禁言（在发消息时也会检查）
+            // 检查是否为管理员，显示管理按钮
+            const sessionRes = await fetch('/api/session');
+            const sessionData = await sessionRes.json();
+            const adminActions = document.getElementById('adminActions');
+            if (sessionData.loggedIn && sessionData.role === 'admin') {
+                adminActions.style.display = 'flex';
+                // 清空按钮事件绑定一次
+                const clearBtn = document.getElementById('clearForumBtn');
+                clearBtn.onclick = async () => {
+                    if (!confirm('确定清空所有留言吗？此操作不可恢复！')) return;
+                    const delRes = await fetch('/api/forum/messages', { method: 'DELETE' });
+                    const result = await delRes.json();
+                    if (result.success) {
+                        alert('已清空所有留言');
+                        loadMessages();
+                    } else {
+                        alert('清空失败：' + (result.error || '未知错误'));
+                    }
+                };
+            } else {
+                adminActions.style.display = 'none';
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // 生成昵称对应的颜色
+    function stringToColor(str) {
+        if (!str) return '#e67e22';
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            const value = (hash >> (i * 8)) & 0xff;
+            color += ('00' + value.toString(16)).slice(-2);
+        }
+        return color;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // 点击头像：弹出管理员操作菜单
+    window.handleAvatarClick = function(nickname) {
+        // 先检查当前用户是否为管理员
+        fetch('/api/session')
+            .then(res => res.json())
+            .then(sessionData => {
+                if (!sessionData.loggedIn || sessionData.role !== 'admin') {
+                    alert('只有管理员才能操作');
+                    return;
+                }
+                // 弹出操作选项
+                const choice = prompt(
+                    `请选择对用户「${nickname}」的操作：\n` +
+                    `1. 禁言 (输入 "ban")\n` +
+                    `2. 踢出 (输入 "kick")\n` +
+                    `3. 解除处罚 (输入 "unban")\n` +
+                    `取消请点击取消`,
+                    'ban'
+                );
+                if (!choice) return;
+                if (choice === 'ban' || choice === 'kick') {
+                    const reason = prompt(`请输入${choice === 'ban' ? '禁言' : '踢出'}原因（可选）：`, '');
+                    fetch('/api/forum/ban', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nickname, action: choice, reason: reason || '' })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(`操作成功！用户「${nickname}」已被${choice === 'ban' ? '禁言' : '踢出'}`);
+                            loadMessages(); // 刷新
+                            if (choice === 'kick') {
+                                // 如果被踢出的是当前用户，则触发踢出页面
+                                if (nickname === currentNickname) {
+                                    localStorage.removeItem('forum_nick');
+                                    window.location.reload();
+                                }
+                            }
+                        } else {
+                            alert('操作失败：' + (data.error || '未知错误'));
+                        }
+                    })
+                    .catch(err => alert('请求失败：' + err.message));
+                } else if (choice === 'unban') {
+                    // 解除处罚
+                    if (!confirm(`确定要解除对「${nickname}」的处罚吗？`)) return;
+                    fetch(`/api/forum/ban/${encodeURIComponent(nickname)}`, {
+                        method: 'DELETE'
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(`已解除对「${nickname}」的处罚`);
+                            loadMessages();
+                        } else {
+                            alert('解除失败：' + (data.error || '未知错误'));
+                        }
+                    })
+                    .catch(err => alert('请求失败：' + err.message));
+                } else {
+                    alert('无效操作');
+                }
+            })
+            .catch(err => console.error('管理员状态检查失败', err));
+    };
+
+    // 设置昵称
+    setNicknameBtn.onclick = () => {
+        let newNick = nicknameInput.value.trim();
+        if (newNick === '') {
+            alert('昵称不能为空');
+            return;
+        }
+        if (newNick.length > 20) newNick = newNick.substring(0,20);
+        currentNickname = newNick;
+        localStorage.setItem('forum_nick', currentNickname);
+        // 检查是否被踢出
+        checkKicked().then(kicked => {
+            if (!kicked) {
+                alert('昵称已设置为：' + currentNickname);
+                loadMessages();
+            }
+        });
+    };
+
+    // 发送留言
+    async function sendMessage() {
+        if (!currentNickname) {
+            alert('请先设置昵称');
+            return;
+        }
+        const text = document.getElementById('messageInput').value.trim();
+        if (!text) {
+            alert('请输入内容');
+            return;
+        }
+        const res = await fetch('/api/forum/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname: currentNickname, text })
+        });
+        if (res.status === 403) {
+            const err = await res.json();
+            alert('发布失败：' + (err.error || '你已被禁言'));
+            return;
+        }
+        if (res.ok) {
+            document.getElementById('messageInput').value = '';
+            loadMessages();
+        } else {
+            alert('发布失败，请稍后重试');
+        }
+    }
+
+    document.getElementById('sendBtn').onclick = sendMessage;
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // 初始化
+    async function init() {
+        // 先检查是否被踢出
+        const kicked = await checkKicked();
+        if (kicked) return; // 显示踢出页面，停止加载
+        // 否则正常加载
+        loadMessages();
+        setInterval(loadMessages, 5000);
+    }
+
+    init();
+</script>
+</body>
+</html>
